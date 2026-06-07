@@ -2,6 +2,15 @@
 
 My personal collection of agent skills
 
+## Installation
+
+- skills.sh:
+```
+npx skills add https://github.com/GalCohen/skills
+```
+
+- or copy & paste into your `./claude/skills/`,  `./agents/skills/`, etc.
+
 ## Current Skills
 
 ### Implementation Complete
