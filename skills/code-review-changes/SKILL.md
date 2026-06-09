@@ -4,7 +4,6 @@ description: Delegate a fresh-eyes code review of code changes.
 disable-model-invocation: true
 license: Internal
 metadata:
-  version: "1.0"
   category: quality
 ---
 
