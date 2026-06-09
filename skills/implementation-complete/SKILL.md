@@ -90,6 +90,8 @@ If the project has no coverage tooling configured, skip this — don't add it un
 The point of this gate is catching work that _feels_ done but isn't — don't treat it as a
 formality.
 
+Important: This list may not be exhaustive. This project may have unique requirements or custom tooling that necessitate additional validation steps. Make sure you understand the specific needs of this codebase and adapt the checklist accordingly. The goal is comprehensive validation, not just checking boxes.
+
 **Only after every applicable section above passes** may you declare:
 
 - "Implementation complete"
