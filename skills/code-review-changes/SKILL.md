@@ -22,8 +22,9 @@ You wrote this code, so you can't review it cold — delegate, then triage. Here
 2. **Wait for it to finish.** It will write its report to `<user's temp directory>/code-reviews/[branch-name].md` and return a short summary.
 3. **Read the report file.** Don't rely on the sub-agent's summary alone — open the actual markdown file.
 4. **Triage the findings against your implementation context.** For each item, decide: address it, defer it, or dismiss it (with reason). Items the sub-agent couldn't know about — scope boundaries, explicit user decisions, intentional trade-offs — are legitimate dismissals.
-5. **Report back to the user** with a short list of what you plan to address and what you're skipping (and why). Let them redirect before you start changing code.
-6. **Apply the accepted fixes.**
+5. **Apply the accepted fixes immediately.** Do not pause for user confirmation after triage. The implementor owns the decision about what to address. Only stop and ask the user if a finding requires a product decision, changes scope, risks data loss, introduces a breaking API change, or conflicts with prior user instructions.
+6. **Validate the result.** Run the focused tests/lints/build checks appropriate to the accepted fixes. If validation cannot run, say why.
+7. **Report back to the user.** Include the review report path, which findings you addressed, which findings you deferred or dismissed with brief reasons, and validation performed.
 
 ## Sub-agent prompt template
 
@@ -104,8 +105,10 @@ When you read the report, you'll know things the sub-agent can't:
 
 For each finding, pick one:
 
-- **Address** — the sub-agent is right; fix it now.
+- **Address** — the sub-agent is right; fix it now in this same turn.
 - **Defer** — valid but out of scope for this change; note it for a follow-up (or surface to the user).
 - **Dismiss** — not applicable here; briefly record why in your reply to the user so they can push back if they disagree.
 
 Do not blindly apply every finding. You decide which ones are correct and worth acting on.
+
+After triage, proceed directly to implementation for all **Address** items. Do not ask for confirmation unless the fix requires a new product or scope decision.
