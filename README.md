@@ -22,7 +22,7 @@ npx skills add https://github.com/GalCohen/skills
 ### Code Review Changes
 
 - Invoke manually with `code-review-changes`
-- Has the main implementation agent spawn a sub-agent to review and report back its findings. Then the main implementation agent decides which feedback to address. This way the implementer gets a fresh, unbiased review, while still maintaining the implementation context to push back or apply the correct fixes as needed.
+- Has the main implementation agent spawn two sub-agents in parallel: one reviews correctness and project conventions, while the other audits comments and developer documentation for clarity, concision, accuracy, and resistance to drift. The implementation agent then triages both reports using its original context and applies the accepted fixes.
 - Triggred manually only.
 
 ### Hand Off
