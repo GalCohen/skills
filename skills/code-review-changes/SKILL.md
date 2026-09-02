@@ -1,10 +1,9 @@
 ---
 name: code-review-changes
-description: Delegate a fresh-eyes review of code changes to two parallel sub-agents—one for correctness and project conventions, and one for concise, durable code comments and developer documentation—then triage and apply their findings.
-disable-model-invocation: true
+description: Fresh-eyes review of task-relevant uncommitted changes, followed by informed triage and accepted fixes. Invoke once an implementation is believed working and before implementation-complete, when asked to review or sanity-check the current diff, or before commit or PR creation if the task is unreviewed. Skip active iteration, trivial diffs, and reviews of committed ranges, branches, or existing PRs.
 license: Internal
 metadata:
-  version: "1.1"
+  version: "1.2"
   category: quality
 ---
 
@@ -17,40 +16,65 @@ You wrote this code, so you cannot review it cold. Delegate two deliberately dis
 
 Separate scopes give both reviewers enough attention to find meaningful issues without duplicating each other's work. They must also write to different report paths so parallel completion cannot overwrite a report.
 
+This review is a bounded phase, not a loop. In the normal completion flow, `implementation-complete` calls this skill at most once, this skill returns after applying accepted findings, and `implementation-complete` validates the settled result. Review fixes and validation fixes do not automatically trigger another review.
+
 ## Workflow
 
-1. **Resolve the user's OS temp directory and current branch name.** Sanitize the branch name for filenames by replacing `/` with `-`; use `detached-head` if no branch name is available.
-2. **Spawn both review sub-agents before waiting for either one.** Use the prompt templates below and launch both in the same response/tool batch when the environment supports it. This concurrency is intentional.
+1. **Confirm this run is needed and define its scope.** Review once when the task's implementation is believed working. Include task-relevant staged, unstaged, and untracked files. Preserve and exclude unrelated pre-existing user changes; tell both reviewers the exact exclusions. Do not self-invoke again for the same task merely because review or validation produced edits. A later run requires an explicit user request or a genuinely new implementation phase.
+2. **Resolve fresh report paths.** Resolve the operating system's temporary directory and current branch name. Sanitize the branch name for filenames by replacing `/` with `-`; use `detached-head` if no branch name is available. Build the two literal absolute paths described below and clear stale files at those exact paths before delegating.
+3. **Spawn both review sub-agents before waiting for either one.** Use the prompt templates below and launch both in the same response/tool batch when the environment supports it. This concurrency is intentional.
 
    - If sub-agents are unavailable, invoke two independent agents through the available CLI.
    - If no delegation mechanism exists, perform both reviews yourself as separate passes and write both reports in the specified formats.
 
-3. **Wait for both reviewers to finish.** Reviewer A writes `{{temp-dir}}/code-reviews/{{branch-name}}.md`; Reviewer B writes `{{temp-dir}}/code-reviews/{{branch-name}}-comments.md`.
-4. **Read both complete report files.** Do not rely on the returned summaries alone.
-5. **Triage every finding against your implementation context.** Decide whether to address, defer, or dismiss each item. Scope boundaries, explicit user decisions, intentional trade-offs, and changes made after a reviewer inspected the diff are legitimate reasons not to apply a finding.
-6. **Apply accepted core-review fixes first.** Correctness changes can invalidate line numbers, comment wording, and documentation assumptions.
-7. **Re-check Reviewer B's findings against the updated diff, then apply the accepted comment and documentation cleanup.** Do not apply stale verdicts mechanically.
-8. **Validate the result.** Run the focused tests, lints, builds, or documentation checks appropriate to the accepted fixes. If validation cannot run, explain why.
-9. **Report back to the user.** Include both report paths; findings addressed, deferred, or dismissed; brief reasons for non-addressed findings; and validation performed.
+4. **Wait for both reviewers to finish.** Each reviewer writes only to its assigned report path.
+5. **Read both complete report files.** Do not rely on the returned summaries alone. A missing current-run report is a failed review, not an empty report; retry that reviewer once or report the failure.
+6. **Triage every finding against your implementation context.** Decide whether to address, defer, or dismiss each item. Scope boundaries, explicit user decisions, intentional trade-offs, unrelated user-owned changes, and changes made after a reviewer inspected the diff are legitimate reasons not to apply a finding.
+7. **Apply accepted core-review fixes first.** Correctness changes can invalidate line numbers, comment wording, and documentation assumptions.
+8. **Re-check Reviewer B's findings against the updated diff, then apply the accepted comment and documentation cleanup.** Do not apply stale verdicts mechanically.
+9. **Return control to the caller.** If `implementation-complete` invoked this review, resume its next validation section without invoking this skill again. If this was a standalone review request, run only focused checks needed to avoid handing back obviously broken edits, then report both paths, dispositions, and checks. The full completion gate remains responsible for comprehensive validation.
 
 Apply accepted fixes without pausing for routine confirmation. Stop and ask only when a finding requires a product decision, expands scope, risks data loss, introduces a breaking API change, or conflicts with prior user instructions.
 
+## Review budget and repeat policy
+
+- Count a review as performed only after both current-run reports were read and triaged.
+- One completed run satisfies the review precondition for the current task. Accepted review edits do not invalidate it.
+- Fix build, lint, type-check, or test failures inside `implementation-complete`; they do not reset the review precondition.
+- Do not use report timestamps or leftover files to infer review state. Track it in the current conversation/task state.
+- If conversation history was compacted, use its summary or handoff as evidence. Any indication that the review workflow completed or its reports were read and triaged satisfies the budget even if details were compressed. Do not repeat a review merely because exact state was lost; if there is no evidence either way and a non-trivial uncommitted task diff remains, run one review.
+- Run again only when the user explicitly asks or when the work has become a materially different implementation rather than a fix to reviewed work. Never begin that later run automatically from inside this skill.
+
+This budget prevents `review → fix → review` recursion while preserving a deliberate fresh-eyes pass before final validation.
+
+## Report paths
+
+Resolve `{{report-path-a}}` and `{{report-path-b}}` before spawning either reviewer and replace the placeholders in their prompts with literal absolute paths:
+
+- Reviewer A: `{{os-temp-dir}}/code-reviews/{{sanitized-branch}}-review.md`
+- Reviewer B: `{{os-temp-dir}}/code-reviews/{{sanitized-branch}}-comments.md`
+
+Create the parent directory and remove any existing files at these two exact paths before the run. Fixed names are intentional: the reports are temporary evidence for the current triage, and clearing them prevents a failed reviewer from appearing to have succeeded.
+
 ## Reviewer A prompt — core code review
 
-Fill in all `{{...}}` placeholders before spawning the agent.
+Fill in all `{{...}}` placeholders before spawning the agent, including the task scope and literal report path.
 
 ```text
-You are an expert code reviewer. Review all uncommitted changes on the current branch and write actionable findings to a markdown report. Report only; do not edit source files.
+You are an expert code reviewer. Review the task-relevant uncommitted changes described below and write actionable findings to a markdown report. Report only; do not edit source files.
+
+Review scope: {{review-scope}}
+Explicit exclusions: {{review-exclusions}}
 
 Another reviewer is auditing comments and developer documentation in parallel. Leave wording, redundancy, clarity, and staleness to that reviewer. Mention a comment or document only when it is materially misleading about a behavioral issue you are reporting.
 
 Steps:
 
-1. Run `git status --porcelain`, `git diff`, and `git diff --staged` so modified, staged, and untracked files are all considered. Inspect untracked source files directly because they do not appear in a normal diff.
+1. Run `git status --porcelain`, `git diff`, and `git diff --staged` to understand the working tree, but review only the stated scope. Inspect in-scope untracked source files directly because they do not appear in a normal diff. Do not critique excluded user changes.
 2. Read every affected source file in full; the diff alone can hide important surrounding context.
 3. Read the repository's applicable `AGENTS.md` files and any directly relevant project guidance or conventions they reference.
 4. Review the changes as a coherent solution, not only as isolated lines.
-5. Write the report to `{{temp-dir}}/code-reviews/{{branch-name}}.md`. Create the directory if needed and overwrite an existing report for this branch because the latest diff is authoritative.
+5. Write the report to `{{report-path-a}}`. Use exactly this literal path; do not derive another filename.
 
 Focus on issues a human reviewer would actually raise:
 
@@ -105,23 +129,26 @@ Do not invent findings to fill the template. After writing the report, return a 
 
 ## Reviewer B prompt — comments and developer documentation
 
-Fill in all `{{...}}` placeholders before spawning the agent.
+Fill in all `{{...}}` placeholders before spawning the agent, including the task scope and literal report path.
 
 ```text
-You are an expert reviewer auditing only code comments and developer-facing documentation affected by the uncommitted changes on the current branch. Another reviewer is covering logic, architecture, naming, security, accessibility, and tests in parallel; stay out of that scope. Report only; do not edit source files.
+You are an expert reviewer auditing only code comments and developer-facing documentation affected by the task-relevant uncommitted changes described below. Another reviewer is covering logic, architecture, naming, security, accessibility, and tests in parallel; stay out of that scope. Report only; do not edit source files.
+
+Review scope: {{review-scope}}
+Explicit exclusions: {{review-exclusions}}
 
 Your goal is durable context, not more prose. Keep comments and documentation that explain why, constraints, invariants, non-obvious behavior, or externally imposed quirks. Remove or revise material that merely narrates the code, duplicates a signature, describes the change history, is unnecessarily long, or will silently become false after routine edits.
 
 Steps:
 
-1. Run `git status --porcelain`, `git diff`, and `git diff --staged`. Inspect untracked files directly because they do not appear in a normal diff.
+1. Run `git status --porcelain`, `git diff`, and `git diff --staged`, but audit only the stated scope. Inspect in-scope untracked files directly because they do not appear in a normal diff. Do not rule on excluded user changes.
 2. Build the in-scope set:
    - Comments, doc comments, docstrings, and developer documentation added or modified by this branch.
    - Pre-existing comments or documentation whose adjacent code, referenced symbol, behavior, configuration, or example changed in the diff. Treat these as possible stranded documentation.
    - Exclude untouched material with no concrete dependency on the changed code.
 3. Read every affected file in full. Read enough surrounding source to determine whether each item adds information the code cannot express and whether it is still accurate.
 4. Rule on every in-scope item as Keep, Revise, or Remove using the rubric below.
-5. Write the report to `{{temp-dir}}/code-reviews/{{branch-name}}-comments.md`. Create the directory if needed and overwrite an existing report for this branch.
+5. Write the report to `{{report-path-b}}`. Use exactly this literal path; do not derive another filename.
 
 For code comments and docstrings, quote the exact text, including comment markers where present. For longer documentation, quote only the smallest exact excerpt needed to locate the issue and include its heading or line number. Never invent or silently paraphrase the text being reviewed.
 
