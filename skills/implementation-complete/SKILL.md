@@ -1,9 +1,9 @@
 ---
 name: implementation-complete
-description: Mandatory completion gate for software implementation work. ALWAYS invoke before declaring an implementation done, complete, ready for review, ready for the next phase, or fully validated; when the user asks to verify, validate, finalize, or wrap up code changes; and when finishing any coding task, even without an explicit validation request. If task-relevant uncommitted changes have not received a fresh-eyes review in the current task, invoke code-review-changes once before validation, then resume this gate. Do not use for research, diagnosis, planning, or review-only tasks that made no implementation changes.
+description: Mandatory completion gate for software work. ALWAYS invoke before declaring code done, validated, ready for review or the next phase, and whenever verifying, finishing, or finalizing a coding task. If task-relevant uncommitted changes lack fresh-eyes review, invoke code-review-changes once, then validate settled code. Do not use for research, diagnosis, planning, or no-change review tasks.
 license: Internal
 metadata:
-  version: "1.1"
+  version: "2.0"
   category: quality
 ---
 
@@ -21,8 +21,8 @@ Do not turn it into `review → fix → review` or `validation → fix → revie
 
 Before running commands:
 
-1. Define the task-relevant change set. Use the conversation, `git status`, staged and unstaged diffs, and untracked files. Preserve unrelated pre-existing user changes and exclude them from review and cleanup.
-2. Determine whether `code-review-changes` has already completed for this task in the current conversation. Do not infer this from temporary report files or timestamps.
+1. Define the task-relevant change set. Use the conversation, `git status`, staged and unstaged diffs, untracked files, and commits created during the current task. Preserve unrelated pre-existing user changes and exclude them from review and cleanup.
+2. Determine whether `code-review-changes` has already completed for this task in the current conversation. Do not infer this from temporary report files or timestamps. If history was compacted, treat a summary or handoff that says reports were read and triaged as sufficient evidence; do not repeat a review merely because its details were compressed.
 3. Discover the repository's actual validation workflow. Read applicable `AGENTS.md` or equivalent instructions, package and build manifests, CI configuration, and contributor documentation.
 4. Map the applicable sections below to concrete project commands. Prefer the project's CI-equivalent or documented commands. Do not assume a language, framework, package manager, or tool, and do not install missing tooling merely to satisfy this checklist.
 
@@ -32,6 +32,8 @@ Record checks that are inapplicable, unavailable, prohibitively environment-depe
 
 If the task-relevant uncommitted changes have not been reviewed in this task, invoke `code-review-changes` now and follow it through both reports, triage, and accepted fixes. Resume at section 2 when it returns.
 
+If the task's only changes are already committed and were not reviewed before commit, do not treat a clean working tree as proof that review happened. `code-review-changes` intentionally does not review committed ranges, branches, or existing PRs. Use the repository's committed-range or PR review workflow when one is available; otherwise record that fresh-eyes review was not performed and do not call this precondition satisfied.
+
 Skip this precondition when:
 
 - the diff is trivial, such as formatting-only changes, a pure rename with no behavioral effect, or a clean revert;
@@ -40,6 +42,8 @@ Skip this precondition when:
 - the current task already completed the review workflow.
 
 One completed review satisfies this precondition for the task. Edits made while applying accepted findings or fixing later validation failures do not reset it. Never invoke `code-review-changes` recursively or automatically for a second pass. A materially new implementation or an explicit user request may warrant another review, but that is a separate deliberate decision outside this completion cycle.
+
+If state is genuinely unknown after compaction and no summary or handoff indicates whether review ran, uncertainty alone is not a reason to repeat likely completed work. Run one review only when a non-trivial uncommitted task diff remains and there is no evidence of prior review; otherwise disclose the uncertainty in the final validation report.
 
 ## 2. Change-set completeness and cleanup
 

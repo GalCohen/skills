@@ -1,6 +1,6 @@
 ---
 name: code-review-changes
-description: Fresh-eyes review of task-relevant uncommitted code changes, followed by informed triage and accepted fixes. Invoke proactively once an implementation is believed working and before the implementation-complete quality gate, as well as when the user asks to review, critique, sanity-check, or inspect the current diff, or before committing or opening a PR when the current task has not yet been reviewed. Skip while implementation is still actively changing, for trivial diffs such as formatting-only changes or pure renames, and for already-committed ranges, branches, or existing PRs.
+description: Fresh-eyes review of task-relevant uncommitted changes, followed by informed triage and accepted fixes. Invoke once an implementation is believed working and before implementation-complete, when asked to review or sanity-check the current diff, or before commit or PR creation if the task is unreviewed. Skip active iteration, trivial diffs, and reviews of committed ranges, branches, or existing PRs.
 license: Internal
 metadata:
   version: "1.2"
@@ -42,6 +42,7 @@ Apply accepted fixes without pausing for routine confirmation. Stop and ask only
 - One completed run satisfies the review precondition for the current task. Accepted review edits do not invalidate it.
 - Fix build, lint, type-check, or test failures inside `implementation-complete`; they do not reset the review precondition.
 - Do not use report timestamps or leftover files to infer review state. Track it in the current conversation/task state.
+- If conversation history was compacted, use its summary or handoff as evidence. Any indication that the review workflow completed or its reports were read and triaged satisfies the budget even if details were compressed. Do not repeat a review merely because exact state was lost; if there is no evidence either way and a non-trivial uncommitted task diff remains, run one review.
 - Run again only when the user explicitly asks or when the work has become a materially different implementation rather than a fix to reviewed work. Never begin that later run automatically from inside this skill.
 
 This budget prevents `review → fix → review` recursion while preserving a deliberate fresh-eyes pass before final validation.
