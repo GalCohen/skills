@@ -16,14 +16,14 @@ npx skills add https://github.com/GalCohen/skills
 ### Implementation Complete
 
 - Invoke manually with `implementation-complete`
-- A quality gate for agents to work through when they finish their work. (build the app, run the tests, remove unused files, etc.)
-- Triggers automatically as needed.
+- A mandatory completion gate that discovers and runs the project's own review, build, static-check, test, documentation, cleanup, and runtime validation workflow before an agent declares implementation work done.
+- Triggers automatically when implementation work is being finalized. If the task's changes have not been reviewed, it invokes `code-review-changes` once before validating the settled result.
 
 ### Code Review Changes
 
 - Invoke manually with `code-review-changes`
-- Has the main implementation agent spawn two sub-agents in parallel: one reviews correctness and project conventions, while the other audits comments and developer documentation for clarity, concision, accuracy, and resistance to drift. The implementation agent then triages both reports using its original context and applies the accepted fixes.
-- Triggred manually only.
+- Runs a fresh-eyes review of task-relevant changes, then has the implementation agent triage the findings using its original context and apply the accepted fixes.
+- Triggers proactively once the implementation is believed working and before the completion gate, while enforcing a one-review budget that prevents recursive review/fix loops.
 
 ### Hand Off
 

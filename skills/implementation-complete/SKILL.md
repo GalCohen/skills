@@ -1,114 +1,129 @@
 ---
 name: implementation-complete
-description: Implementation completion checklist for a software project. ALWAYS invoke before declaring "implementation complete", "all tests passing", "done", or "ready for next phase". Also trigger when the user asks to verify, validate, or finalize any implementation, when wrapping up any coding task that modified shared interfaces, types, schemas, or public APIs, or when entirely finishing any coding task and reaching the point of deciding what to do next — even if the user hasn't explicitly asked for validation. This is a required quality gate — do not skip it.
+description: Mandatory completion gate for software implementation work. ALWAYS invoke before declaring an implementation done, complete, ready for review, ready for the next phase, or fully validated; when the user asks to verify, validate, finalize, or wrap up code changes; and when finishing any coding task, even without an explicit validation request. If task-relevant uncommitted changes have not received a fresh-eyes review in the current task, invoke code-review-changes once before validation, then resume this gate. Do not use for research, diagnosis, planning, or review-only tasks that made no implementation changes.
+license: Internal
+metadata:
+  version: "1.1"
+  category: quality
 ---
 
 # Implementation Complete Checklist
 
-This is a mandatory quality gate. Run through every section below before declaring any task complete. Do not treat this as a formality — its purpose is catching problems that feel done but aren't.
+This is the final owner of implementation completion. Its job is to settle review findings first, validate the resulting code once it is stable, and report exactly what is and is not proven.
 
-## 0. Discover the Project's Toolchain First
+Use this one-way lifecycle:
 
-Do not assume `npm`, `bun`, `make`, or any specific tool. Identify how this project
-builds, tests, lints, and type-checks by inspecting it:
+`implementation → code-review-changes (once, if needed) → validation → final declaration`
 
-- `AGENTS.md` or similar agent/skill files may have explicit instructions for validation commands. Follow those if they exist.
-- **Manifest / scripts** such as a package.json`(scripts),`Makefile`, `Cargo.toml`, etc.
-- **CI config**: `.github/workflows/`, `.gitlab-ci.yml`, `.circleci/`, etc.
-- **Contributor docs**: `README`, `CONTRIBUTING.md`, etc.
+Do not turn it into `review → fix → review` or `validation → fix → review`. Review and validation fixes remain inside the same completion cycle.
 
-Map each checklist item below to a concrete command for this project. If a category has no
-tooling (e.g. no linter configured), note that and move on — don't invent or install one.
+## 0. Establish state and discover the toolchain
 
-## 1. Orphaned Assets & Files Cleanup
+Before running commands:
 
-If you removed or renamed any views, screens, pages, or components, check for orphaned resources that are no longer referenced:
+1. Define the task-relevant change set. Use the conversation, `git status`, staged and unstaged diffs, and untracked files. Preserve unrelated pre-existing user changes and exclude them from review and cleanup.
+2. Determine whether `code-review-changes` has already completed for this task in the current conversation. Do not infer this from temporary report files or timestamps.
+3. Discover the repository's actual validation workflow. Read applicable `AGENTS.md` or equivalent instructions, package and build manifests, CI configuration, and contributor documentation.
+4. Map the applicable sections below to concrete project commands. Prefer the project's CI-equivalent or documented commands. Do not assume a language, framework, package manager, or tool, and do not install missing tooling merely to satisfy this checklist.
 
-- Image, colors, fonts assets that were only used by removed views.
-- Localization strings that are no longer referenced.
-- Any other supporting files (JSON configs, yaml, plists) tied to removed functionality.
-- Search the codebase (using grep, Find Usages, or similar) for the asset/file name across the codebase to confirm it has zero remaining references before deleting.
+Record checks that are inapplicable, unavailable, prohibitively environment-dependent, or blocked by a known pre-existing failure. A skipped check is not a passed check.
 
-## 2. Linting & Formatting
+## 1. Fresh-eyes review precondition
 
-- No **new** lint errors. Pre-existing warnings are acceptable; don't expand scope fixing
-  unrelated ones unless asked.
-- Formatting to match project standards.
+If the task-relevant uncommitted changes have not been reviewed in this task, invoke `code-review-changes` now and follow it through both reports, triage, and accepted fixes. Resume at section 2 when it returns.
 
-## 3. Build / Compile Verification
+Skip this precondition when:
 
-- The project must build cleanly with no new errors anywhere — not just in files you edited.
-- In a modular codebase, compiling just the files you touched isn't enough — changes to shared types or interfaces can break distant parts of the code that still compile but fail at runtime. A full build is required to catch these issues.
+- the diff is trivial, such as formatting-only changes, a pure rename with no behavioral effect, or a clean revert;
+- the user explicitly declined review;
+- no implementation changes were made; or
+- the current task already completed the review workflow.
 
-## 4. Full Test Suite
+One completed review satisfies this precondition for the task. Edits made while applying accepted findings or fixing later validation failures do not reset it. Never invoke `code-review-changes` recursively or automatically for a second pass. A materially new implementation or an explicit user request may warrant another review, but that is a separate deliberate decision outside this completion cycle.
 
-- Run the **entire** suite, not just tests for the code you touched. Shared/cross-cutting
-  code (config, auth, serialization, shared utilities) can be broken by unrelated changes,
-  so partial runs create false confidence.
-- No previously-passing test may now be failing.
-- Include integration / end-to-end tests if the project has them — unit tests alone don't
-  catch wiring failures between components.
+## 2. Change-set completeness and cleanup
 
-## 5. Breaking Changes Protocol
+Inspect the settled diff as a coherent solution:
 
-**If you modified any shared interface, type, schema, public function signature, or API
-contract:**
+- Confirm the requested behavior is implemented and task-relevant new files are included.
+- Look for debug logging, temporary scaffolding, placeholder data, commented-out code, accidental generated output, and secrets.
+- If files, components, screens, commands, or features were removed or renamed, search before deleting supporting assets, localization entries, configuration, fixtures, or documentation that may now be orphaned.
+- Do not delete unrelated or uncertain files. Escalate when ownership or intended compatibility is unclear.
 
-- Search the **entire** codebase for all usages — not only the files that fail to build.
-- Update every affected site: callers, implementations, tests, mocks/factories, fixtures,
-  serialized data, and documentation.
-- Critically, find **indirect** usages. Grep for the symbol name,
-  string keys, and reflection/serialization references.
-- Re-run the full test suite after the updates to catch integration-level breakage.
+## 3. Shared contracts, dependencies, and boundaries
 
-> A change to a widely-used type can cascade to many files that all still compile but carry
-> subtle runtime bugs. The codebase-wide search is what catches those silent failures —
-> "it compiles" is not "it works."
+When the change affects a shared interface, public API, type, schema, serialization contract, configuration key, database shape, protocol, event, or command-line surface:
 
-## 6. Coverage (if the project tracks it)
+- Search the entire repository for direct and indirect consumers, including callers, implementations, tests, mocks, factories, fixtures, generated bindings, examples, and documentation.
+- Check compatibility and migration behavior, not only compilation. String keys, reflection, persistence, and wire formats can fail without a compiler error.
+- Verify new files belong to the correct target, package, workspace, or build graph.
+- Verify new dependencies are declared in the appropriate manifest or lockfile and respect repository architecture boundaries.
+- Keep visibility as narrow as the actual cross-module contract permits.
 
-If the project has a coverage threshold (check CI config or the test runner config):
+## 4. Documentation and durable comments
 
-- Run coverage separately — it's usually slower than the plain test run.
-- Meet or exceed the project's threshold; don't let coverage decrease for code you didn't
-  touch.
-- For safety-critical or high-stakes systems, treat untested branches as latent production
-  failures, not as acceptable gaps.
+- Update user, contributor, API, configuration, migration, and changelog documentation when the changed behavior requires it.
+- Keep agent-facing project guidance accurate.
+- Ensure examples and commands still work when the project provides a way to check them.
+- Preserve comments that explain non-obvious constraints or decisions; avoid comments that merely narrate code. The comment reviewer handles detailed hygiene, so do not repeat that entire audit here.
 
-If the project has no coverage tooling configured, skip this — don't add it unprompted.
+## 5. Static checks and formatting
 
-## 7. Documentation
+Run every applicable project-provided formatter check, linter, type checker, static analyzer, schema validator, code generator consistency check, or equivalent CI step.
 
-- Update relevant docs (`README`, `docs/`, API references, changelog) when behavior or
-  public APIs change.
-- Keep agent-facing docs (`CLAUDE.md`, `.cursorrules`, etc.) accurate — stale guidance
-  causes future agents to make wrong assumptions.
-- Add comments only for non-obvious decisions; match the surrounding code's comment density.
+- Do not introduce new violations.
+- Do not broaden scope to clean unrelated pre-existing warnings unless required for a meaningful result or requested by the user.
+- If a formatter or generator modifies files, inspect the resulting diff and rerun the checks it can affect.
 
-## 8. Final Declaration
+## 6. Build or compile verification
 
-The point of this gate is catching work that _feels_ done but isn't — don't treat it as a
-formality.
+Run the broadest practical project build or compile command required by repository guidance or CI. For monorepos and modular projects, include affected dependents rather than compiling only edited files.
 
-Important: This list may not be exhaustive. This project may have unique requirements or custom tooling that necessitate additional validation steps. Make sure you understand the specific needs of this codebase and adapt the checklist accordingly. The goal is comprehensive validation, not just checking boxes.
+If a full build is unavailable in the current environment, run the strongest supported substitute and record the limitation. Do not describe an unrun build as successful.
 
-**Only after every applicable section above passes** may you declare:
+## 7. Tests
 
-- "Implementation complete"
-- "All tests passing"
-- "Ready for next phase"
+Run the project's full test suite when it is available and permitted. A focused test run is useful for fast feedback but does not replace the full suite at completion.
 
-**If any check fails, DO NOT declare completion. Instead:**
+- Include configured integration, end-to-end, snapshot, contract, migration, or platform tests when repository guidance or CI treats them as part of completion.
+- Verify new or changed behavior has appropriate tests. Do not manufacture low-value tests merely to satisfy a checkbox.
+- If the project tracks coverage, run the configured coverage check and meet its threshold. Do not add coverage tooling unprompted.
+- Distinguish failures caused by the task from confirmed pre-existing or environmental failures. Investigate enough to support that distinction.
 
-1. List every failure.
-2. Fix them systematically.
-3. Re-run all validation commands.
-4. Only then declare completion.
+## 8. Runtime or artifact checks
 
-Report outcomes faithfully: if a step was skipped or had no tooling, say so explicitly
-rather than implying it passed.
+Perform applicable checks that static validation cannot cover, such as launching the changed application, exercising a CLI path, rendering changed UI, validating a package or generated artifact, checking migrations, or running a documented smoke test.
 
----
+Use the repository's own workflow and tools. Skip this section when no meaningful runtime or artifact check applies, and say so.
 
-**The one rule that's always true:** prefer the full test suite over individual feature
-tests, and prefer the project's own CI commands over anything you improvise.
+## 9. Fix-and-rerun rule
+
+When any section reveals a task-related defect:
+
+1. Fix it without restarting the review workflow.
+2. Rerun the failed check.
+3. Rerun any later or dependent checks the fix could invalidate.
+4. Inspect the final task-relevant diff once more for accidental changes.
+
+Continue until every applicable check passes or a genuine blocker remains. Stop for user input only when resolution requires a product decision, materially expands scope, risks data loss, creates a breaking contract, needs unavailable credentials or infrastructure, or conflicts with prior instructions.
+
+## 10. Final declaration
+
+Only declare the implementation complete when:
+
+- the review precondition was satisfied or legitimately skipped;
+- every applicable, runnable validation passed after the final edits; and
+- no known task-related defect or unresolved required decision remains.
+
+Report:
+
+- review status, including why it was skipped if applicable;
+- checks run and their outcomes;
+- checks not run and why;
+- confirmed pre-existing or environmental failures;
+- any deferred or dismissed review findings; and
+- remaining risk or recommended manual verification.
+
+Do not say "all tests passing" unless the full applicable suite actually ran and passed. When required validation is unavailable or blocked, state that the implementation is not fully verified rather than converting missing evidence into success. When the remaining issue is known and external to the task, describe the work as completed with that explicit validation limitation instead of making an unqualified claim.
+
+The invariant is simple: review the implementation before comprehensive validation, validate the settled result, and never let either phase recursively restart the other.
