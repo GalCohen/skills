@@ -2,8 +2,9 @@
 name: code-review-changes
 description: Fresh-eyes review of task-relevant uncommitted changes, followed by informed triage and accepted fixes. Invoke once an implementation is believed working and before implementation-complete, when asked to review or sanity-check the current diff, or before commit or PR creation if the task is unreviewed. Skip active iteration, trivial diffs, and reviews of committed ranges, branches, or existing PRs.
 license: Internal
+compatibility: Requires the `code-comments` skill for the comment and documentation review.
 metadata:
-  version: "1.2"
+  version: "1.3"
   category: quality
 ---
 
@@ -70,8 +71,8 @@ Another reviewer is auditing comments and developer documentation in parallel. L
 
 Steps:
 
-1. Run `git status --porcelain`, `git diff`, and `git diff --staged` to understand the working tree, but review only the stated scope. Inspect in-scope untracked source files directly because they do not appear in a normal diff. Do not critique excluded user changes.
-2. Read every affected source file in full; the diff alone can hide important surrounding context.
+1. Run `git status --porcelain`, `git diff`, and `git diff --staged` to understand the working tree, but review only the stated scope. Inspect in-scope untracked files directly because they do not appear in a normal diff. Do not critique excluded user changes.
+2. Read every affected file in full; the diff alone can hide important surrounding context.
 3. Read the repository's applicable `AGENTS.md` files and any directly relevant project guidance or conventions they reference.
 4. Review the changes as a coherent solution, not only as isolated lines.
 5. Write the report to `{{report-path-a}}`. Use exactly this literal path; do not derive another filename.
@@ -147,53 +148,19 @@ Steps:
    - Pre-existing comments or documentation whose adjacent code, referenced symbol, behavior, configuration, or example changed in the diff. Treat these as possible stranded documentation.
    - Exclude untouched material with no concrete dependency on the changed code.
 3. Read every affected file in full. Read enough surrounding source to determine whether each item adds information the code cannot express and whether it is still accurate.
-4. Rule on every in-scope item as Keep, Revise, or Remove using the rubric below.
-5. Write the report to `{{report-path-b}}`. Use exactly this literal path; do not derive another filename.
+4. Read the `code-comments` skill in full. It is the single source of truth for comments, doc comments, docstrings, and API documentation attached to code: what earns its place, what is noise, issue-reference placement, the drift test, and what is out of scope. Rule on every such in-scope item against it. For other developer-facing documentation, audit clarity, concision, accuracy, duplication, and resistance to drift. Judge each item on its own merits — long doc blocks already in the file are likely debt, not the standard to calibrate against.
+5. Rule on every in-scope item as Keep, Revise, or Remove using the applicable guidance above.
+6. Write the report to `{{report-path-b}}`. Use exactly this literal path; do not derive another filename.
+
+You are already the comment reviewer inside `code-review-changes`. Do not invoke `code-review-changes` again when the `code-comments` skill points full-diff audits back to it.
 
 For code comments and docstrings, quote the exact text, including comment markers where present. For longer documentation, quote only the smallest exact excerpt needed to locate the issue and include its heading or line number. Never invent or silently paraphrase the text being reviewed.
 
-### Keep
+Verdicts:
 
-Keep material that supplies durable information the implementation cannot readily express:
-
-- Why this approach is necessary or why an obvious alternative is wrong
-- An invariant, ordering rule, unit, threading constraint, or cross-call-site contract
-- A non-obvious edge case or domain rule
-- An external platform, protocol, dependency, or compatibility workaround, ideally anchored to a version or issue
-- A warning that prevents a plausible future edit from breaking behavior
-- Public API guidance that callers genuinely need and cannot infer from the signature and types
-
-### Revise
-
-Revise when the underlying information is valuable but its expression is weak. Always provide exact replacement text or a precise documentation edit.
-
-- Replace a description of what the code does with the reason or constraint that matters
-- Compress bloated prose while preserving essential context
-- Remove brittle anchors such as line numbers, positional phrases, duplicated constants, counts, or symbol names that a routine edit can orphan
-- Correct documentation that no longer matches behavior
-- Anchor TODO or FIXME notes to a stable issue, owner, or removal condition; otherwise recommend removal
-- Prefer an assertion, type, named abstraction, test, or clearer API when it can enforce the claim better than prose; explain that the comment should disappear with that code change
-
-### Remove
-
-Remove material that adds noise or future liability:
-
-- Restates or walks through self-explanatory code
-- Re-spells a function, property, parameter, or type signature without adding a contract or constraint
-- Narrates file structure or obvious control flow
-- Describes the change rather than the enduring behavior; version control already records history
-- Contains commented-out code
-- Duplicates a test name or stable documentation elsewhere
-- Is generic template, scaffolding, or AI-filler prose
-- Is obsolete, unresolvable, or so brittle that it is more likely to mislead than help
-
-### Drift test
-
-For every Keep or Revise candidate, ask whether a symbol rename, new enum case, changed constant, reordered block, altered default, or fixed upstream bug could make it false without drawing an editor's attention. If so, re-anchor it to the actual dependency or recommend removing it. Concise is not enough; the text must also resist silent drift.
-
-### Out of scope
-
-Do not rule on license headers, generated-file banners, formatter or linter directives, build-configuration directives, navigation markers, user-facing copy, or documentation unrelated to changed behavior.
+- **Keep** — the item satisfies the applicable guidance and earns its place.
+- **Revise** — the information belongs, but its expression is weak. Always supply exact replacement text or a precise documentation edit. If prose no longer matches behavior, report the discrepancy without deciding whether the prose or code is the bug; the main agent knows the intent.
+- **Remove** — the item violates the applicable guidance and adds noise, duplication, or future liability.
 
 Use this report format:
 

@@ -13,6 +13,11 @@ npx skills add https://github.com/GalCohen/skills
 
 ## Current Skills
 
+### Code Comments
+
+- Invoke automatically when writing, editing, reviewing, or pruning code comments and developer documentation.
+- Defines what earns a comment, where removed context belongs, and how to keep comments concise, durable, and resistant to drift across coding projects.
+
 ### Implementation Complete
 
 - Invoke directly with `implementation-complete`.
@@ -24,6 +29,7 @@ npx skills add https://github.com/GalCohen/skills
 - Invoke directly with `code-review-changes`.
 - Runs a fresh-eyes review of task-relevant changes, then has the implementation agent triage the findings using its original context and apply the accepted fixes.
 - Triggers proactively once the implementation is believed working and before the completion gate, while enforcing a one-review budget that prevents recursive review/fix loops.
+- Requires the `code-comments` skill for the comment and documentation review.
 
 ### Hand Off
 
