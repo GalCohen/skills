@@ -3,7 +3,7 @@ name: implementation-complete
 description: Mandatory completion gate for software work. ALWAYS invoke before declaring code done, validated, ready for review or the next phase, and whenever verifying, finishing, or finalizing a coding task. If task-relevant uncommitted changes lack fresh-eyes review, invoke code-review-changes once, then validate settled code. Do not use for research, diagnosis, planning, or no-change review tasks.
 license: Internal
 metadata:
-  version: "2.0"
+  version: "2.1"
   category: quality
 ---
 
@@ -69,7 +69,7 @@ When the change affects a shared interface, public API, type, schema, serializat
 - Update user, contributor, API, configuration, migration, and changelog documentation when the changed behavior requires it.
 - Keep agent-facing project guidance accurate.
 - Ensure examples and commands still work when the project provides a way to check them.
-- Preserve comments that explain non-obvious constraints or decisions; avoid comments that merely narrate code. The comment reviewer handles detailed hygiene, so do not repeat that entire audit here.
+- Use the `code-comments` skill when available. Add comments only when they carry information the code cannot, and audit comments next to changed code for drift. The comment reviewer handles detailed hygiene, so do not repeat that entire audit here.
 
 ## 5. Static checks and formatting
 

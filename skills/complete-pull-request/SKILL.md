@@ -96,6 +96,8 @@ Then push the focused commits to the PR branch and monitor required checks to a 
 
 After every pushed fix, confirm that the PR head SHA shown by the host matches the commit you validated. Re-read the aggregate diff, unresolved threads, approvals, mergeability, and required checks; earlier green results may belong to an obsolete SHA.
 
+Before declaring the PR complete, if `code-review-changes` was not run against the final diff, apply the `code-comments` skill's self-check to every comment the diff added or stranded.
+
 ## Completion standard
 
 A PR is **merge-ready** only when all of the following are true:
