@@ -42,3 +42,17 @@ npx skills add https://github.com/GalCohen/skills
 - Invoke manually with `complete-pull-request` or provide a PR and ask the agent to finish, finalize, revive, unblock, or shepherd it.
 - Independently validates that the problem is still real and the proposed direction is correct before changing the PR. If valid, it updates the branch with its base, resolves conflicts and necessary feedback, fixes relevant CI issues, runs the project validation, and reports whether the PR is genuinely merge-ready.
 - Stops before mutation when the PR premise is obsolete, the approach is wrong, or a product/security/scope decision is required.
+
+## Routines, Automations, and Loops
+
+### Increase Unit Test Coverage
+
+- Invoke directly with `increase-unit-test-coverage` or from a scheduled maintenance routine.
+- Selects one high-value coverage gap, verifies it is neither already tested nor duplicated by open work, and adds a small, meaningful unit-test improvement.
+- Records coverage evidence, validates the change, and—where the repository workflow and access permit—creates a tracking issue and pull request. Reports and stops instead when the gap exposes a defect or unclear behavior.
+
+### Skill Drift Sweep
+
+- Invoke directly with `skill-drift-sweep [skill-name]` or from a scheduled maintenance routine.
+- Selects one agent skill and audits it against the current codebase in both directions: whether its claims still hold and whether its guidance matches current practice.
+- Corrects confirmed stale guidance, reports code drift or human decisions without guessing, and—where the repository workflow and access permit—creates the relevant issue and pull request.
