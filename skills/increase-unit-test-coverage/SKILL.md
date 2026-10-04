@@ -85,9 +85,8 @@ they exist; do not invent labels. Use the project's established issue workflow, 
 Jira, or GitHub Issues. Link the issue from a pull request containing only this coverage
 improvement.
 
-Create the PR only when the invocation authorizes the repository's normal external workflow
-and the agent has the required access. Otherwise, prepare the validated change and report the
-access limitation. Do not merge the PR.
+Push a branch and open a PR, linking the issue when one exists, unless the run was explicitly told
+not to or lacks GitHub access. Do not merge the PR.
 
 ## Final report
 
